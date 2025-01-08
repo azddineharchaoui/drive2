@@ -5,7 +5,7 @@ class DatabaseConnection {
 
     private function __construct() {
         try {
-            $dsn = "mysql:host=localhost;dbname=Drive";
+            $dsn = "mysql:host=localhost;dbname=Drive2";
             $username = "root";
             $password = "";
     

@@ -1,3 +1,6 @@
+<?php 
+    session_start();
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -34,7 +37,8 @@
             </button>
             <ul id="navLinks" class="hidden md:flex space-x-6 text-gray-700">
                 <li><a href="#home" class="hover:text-blue-500">Accueil</a></li>
-                <li><a href="./location.php" class="hover:text-blue-500">Voitures</a></li>
+                <li><a href="location.php" class="hover:text-blue-500">Voitures</a></li>
+                <li><a href="blog2.php" class="hover:text-blue-500">Blog</a></li>
                 <li><a href="#about" class="hover:text-blue-500">À propos</a></li>
                 <li><a href="#notre-public-cible" class="hover:text-blue-500">Notre Public</a></li>
             </ul>
@@ -53,8 +57,12 @@
             ?>
             <div class="flex justify-end">
                 <span><?php if(isset($_SESSION['user_name'])){echo $_SESSION['user_name'];}?></span>
-                <a class="btn-getstarted" href="logout.php">Logout</a>
-            </div>
+                <form action="logout.php" method="POST">
+                    <button type="submit" name="submit"
+                        class="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                        Déconnexion
+                    </button>
+                </form>            </div>
             <?php }
             ?>
             </div>
@@ -63,7 +71,8 @@
         <div id="mobileMenu" class="hidden bg-white shadow-md">
             <ul class="flex flex-col space-y-2 py-4 px-6 text-gray-700">
                 <li><a href="index.php" class="hover:text-blue-500">Accueil</a></li>
-                <li><a href="./drive/location.php" class="hover:text-blue-500">Voitures</a></li>
+                <li><a href="location.php" class="hover:text-blue-500">Voitures</a></li>
+                <li><a href="blog2.php" class="hover:text-blue-500">Blog</a></li>
                 <li><a href="#about" class="hover:text-blue-500">À propos</a></li>
                 <li><a href="#notre-public-cible" class="hover:text-blue-500">Notre Public</a></li>
             </ul>
@@ -249,6 +258,13 @@
         </div>
     </footer>
     <script>
+
+const menuToggle = document.getElementById('menuToggle');
+const mobileMenu = document.getElementById('mobileMenu');
+const navLinks = document.getElementById('navLinks');
+menuToggle.addEventListener('click', () => {
+    mobileMenu.classList.toggle('hidden');
+});
     const modalBackground = document.getElementById('modalBackground');
     const loginModal = document.getElementById('loginModal');
     const registerModal = document.getElementById('registerModal');
@@ -315,12 +331,7 @@
     });
 
 
-    const menuToggle = document.getElementById('menuToggle');
-    const mobileMenu = document.getElementById('mobileMenu');
-    const navLinks = document.getElementById('navLinks');
-    menuToggle.addEventListener('click', () => {
-        mobileMenu.classList.toggle('hidden');
-    });
+    
     </script>
 
 </body>

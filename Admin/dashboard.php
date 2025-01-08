@@ -36,6 +36,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_a']) && isset($_POST['article_id'])) {
+    require_once('../Classes/Article.php');
+    
+    $articleId = $_POST['article_id'];
+    
+    if ($_POST['action_a'] === 'accept') {
+        if (Article::accepterArticle($articleId)) {
+            $_SESSION['message'] = "Article accepté avec succès.";
+            $_SESSION['message_type'] = "success";
+        } else {
+            $_SESSION['message'] = "Erreur lors de l'acceptation de l'article.";
+            $_SESSION['message_type'] = "danger";
+        }
+    } elseif ($_POST['action_a'] === 'reject') {
+        if (Article::refuserArticle($articleId)) {
+            $_SESSION['message'] = "Article refusé avec succès.";
+            $_SESSION['message_type'] = "success";
+        } else {
+            $_SESSION['message'] = "Erreur lors du refus de l'article.";
+            $_SESSION['message_type'] = "danger";
+        }
+    }
+    
+    header('Location: ' . $_SERVER['PHP_SELF'] . '#articles');
+    exit();
+}
+
+
 if (isset($_SESSION['message'])): ?>
 <div class="alert alert-<?= $_SESSION['message_type'] ?> alert-dismissible fade show" role="alert">
     <?= $_SESSION['message'] ?>
@@ -502,7 +530,152 @@ endif;
         </div>
     </div>
 
+    <!-- Section des themes -->
+    <h1>Gestion des Thèmes</h1>
 
+    <?php if (isset($_GET['success'])): ?>
+    <p class="success">
+        <?php
+        if ($_GET['success'] == 'added') echo "Thème ajouté avec succès !";
+        if ($_GET['success'] == 'updated') echo "Thème mis à jour avec succès !";
+        if ($_GET['success'] == 'deleted') echo "Thème supprimé avec succès !";
+        ?>
+    </p>
+    <?php endif; ?>
+
+    <!-- Formulaire pour ajouter un thème -->
+    <h2 class="mt-5 mb-4 text-center">Ajouter un Thème</h2>
+
+    <form method="POST" action="manage_theme.php" class="w-50 mx-auto bg-light p-4 rounded shadow-sm">
+        <div class="mb-3">
+            <label for="nom" class="form-label">Nom du Thème</label>
+            <input type="text" name="nom" id="nom" class="form-control" placeholder="Nom du thème" required>
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea name="description" id="description" class="form-control" placeholder="Description du thème"
+                rows="4" required></textarea>
+        </div>
+        <button type="submit" name="add_theme" class="btn btn-primary w-100">Ajouter</button>
+    </form>
+
+    <?php 
+            $pdo = DatabaseConnection::getInstance()->getConnection();
+
+$stmt = $pdo->prepare("SELECT * FROM Themes");
+$stmt->execute();
+$themes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+?>
+    <!-- Liste des thèmes -->
+    <h2 class="mt-5 mb-4 text-center">Liste des Thèmes</h2>
+
+    <!-- Tableau des thèmes -->
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Nom</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($themes as $theme): ?>
+                <tr>
+                    <td><?php echo $theme['id_theme']; ?></td>
+                    <td><?php echo htmlspecialchars($theme['nom']); ?></td>
+                    <td><?php echo htmlspecialchars($theme['description']); ?></td>
+                    <td class="d-flex gap-2">
+                        <!-- Formulaire pour modifier un thème -->
+                        <form method="POST" action="manage_theme.php" class="d-inline-flex gap-2 align-items-center">
+                            <input type="hidden" name="id_theme" value="<?php echo $theme['id_theme']; ?>">
+                            <input type="text" name="nom" class="form-control form-control-sm"
+                                value="<?php echo htmlspecialchars($theme['nom']); ?>" required>
+                            <textarea name="description" class="form-control form-control-sm" required
+                                rows="1"><?php echo htmlspecialchars($theme['description']); ?></textarea>
+                            <button type="submit" name="update_theme" class="btn btn-sm btn-warning">
+                                Modifier
+                            </button>
+                        </form>
+
+                        <!-- Bouton pour supprimer un thème -->
+                        <a href="manage_theme.php?delete=<?php echo $theme['id_theme']; ?>"
+                            class="btn btn-sm btn-danger"
+                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce thème ?');">
+                            Supprimer
+                        </a>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+                <!-- Section des articles  -->
+    <div class="container mt-5" id="articles">
+    <h2 class="mb-4">Gestion des Articles</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Titre</th>
+                    <th>Thème</th>
+                    <th>Date de création</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                require_once('../Classes/Article.php');
+                $articles = Article::listerArticles();
+                foreach ($articles as $article):
+                    $statusClass = match($article['statut']) {
+                        'Accepté' => 'bg-success',
+                        'Refusé' => 'bg-danger',
+                        default => 'bg-warning'
+                    };
+                ?>
+                <tr>
+                    <td><?= htmlspecialchars($article['id_article']) ?></td>
+                    <td><?= htmlspecialchars($article['titre']) ?></td>
+                    <td><?= htmlspecialchars($article['theme_nom']) ?></td>
+                    <td><?= htmlspecialchars($article['date_creation']) ?></td>
+                    <td>
+                        <span class="badge <?= $statusClass ?>">
+                            <?= htmlspecialchars($article['statut']) ?>
+                        </span>
+                    </td>
+                    <td>
+                        <?php if ($article['statut'] === 'En attente'): ?>
+                        <form method="POST" class="d-inline">
+                            <input type="hidden" name="article_id" value="<?= $article['id_article'] ?>">
+                            <input type="hidden" name="action_a" value="accept">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="fas fa-check"></i> Accepter
+                            </button>
+                        </form>
+                        <form method="POST" class="d-inline">
+                            <input type="hidden" name="article_id" value="<?= $article['id_article'] ?>">
+                            <input type="hidden" name="action_a" value="reject">
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="fas fa-times"></i> Refuser
+                            </button>
+                        </form>
+                        <?php else: ?>
+                        <span class="text-muted">Déjà traité</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+    
     </main>
     </div>
     </div>
@@ -623,6 +796,8 @@ endif;
             editModal.show();
         });
     });
+
+    
     </script>
 </body>
 

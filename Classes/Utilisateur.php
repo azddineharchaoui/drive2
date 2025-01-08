@@ -82,7 +82,7 @@
                     if ($_SESSION['role_id'] == 1) {
                         header("Location: ./Admin/dashboard.php");
                     } else {
-                        header("Location: ./location.php");
+                        header("Location: location.php");
                     }
                 } else {
                     echo "<script>alert('Mot de passe incorrect. Veuillez réessayer.');</script>";

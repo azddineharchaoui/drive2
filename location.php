@@ -1,8 +1,8 @@
 <?php
 
 session_start();
-if (!isset($_SESSION['user_id']) ||(isset($_SESSION['user_id']) && $_SESSION['role_id'] == 2)) {
-  header("Location: ../index.php");
+if (!isset($_SESSION['user_id']) || (isset($_SESSION['user_id']) && $_SESSION['role_id'] !== 2)) {
+  header("Location: index.php");
 }
 
 ?>
@@ -43,7 +43,8 @@ if (!isset($_SESSION['user_id']) ||(isset($_SESSION['user_id']) && $_SESSION['ro
             </button>
             <ul id="navLinks" class="hidden md:flex space-x-6 text-gray-700">
                 <li><a href="index.php" class="hover:text-blue-500">Accueil</a></li>
-                <li><a href="#offers" class="hover:text-blue-500">Offres</a></li>
+                <li><a href="#offers" class="hover:text-blue-500">Voitures</a></li>
+                <li><a href="blog2.php" class="hover:text-blue-500">Blog</a></li>
                 <li><a href="#mes-reservations" class="hover:text-blue-500">Mes Réservations</a></li>
             </ul>
             <div class="hidden md:flex space-x-4">
@@ -61,7 +62,8 @@ if (!isset($_SESSION['user_id']) ||(isset($_SESSION['user_id']) && $_SESSION['ro
         <div id="mobileMenu" class="hidden bg-white shadow-md">
             <ul class="flex flex-col space-y-2 py-4 px-6 text-gray-700">
                 <li><a href="index.php" class="hover:text-blue-500">Accueil</a></li>
-                <li><a href="#offers" class="hover:text-blue-500">Offres</a></li>
+                <li><a href="#offers" class="hover:text-blue-500">Voitures</a></li>
+                <li><a href="blog2.php" class="hover:text-blue-500">Blog</a></li>
                 <li><a href="#mes-reservations" class="hover:text-blue-500">Mes Réservations</a></li>
             </ul>
             <div class="space-y-2 px-6">

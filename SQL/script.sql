@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS Drive;
-USE Drive;
+CREATE DATABASE IF NOT EXISTS Drive2;
+USE Drive2;
 
 
 CREATE TABLE IF NOT EXISTS roles (
@@ -60,6 +60,58 @@ CREATE TABLE IF NOT EXISTS Avis (
     FOREIGN KEY (id_vehicule) REFERENCES Vehicules(id_vehicule) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS Articles (
+    id_article INT AUTO_INCREMENT PRIMARY KEY,
+    id_utilisateur INT NOT NULL,
+    id_theme INT NOT NULL,
+    titre VARCHAR(50), 
+    contenu TEXT,
+    statut enum('En attente', 'Accepté', 'refusé'), 
+    date_creation DATE,
+    image_url MEDIUMBLOB,
+    FOREIGN KEY (id_utilisateur) REFERENCES Utilisateurs(id_utilisateur) ON DELETE CASCADE ,
+    FOREIGN KEY (id_theme) REFERENCES Themes(id_theme) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Tags (
+    id_tag INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(255)
+);
+
+CREATE TABLE Article_Tag (
+    id_article INT NOT NULL, 
+    id_tag INT NOT NULL,
+    PRIMARY KEY (id_article, id_tag),
+    FOREIGN KEY (id_article) REFERENCES Articles(id_article) ON DELETE CASCADE,
+    FOREIGN KEY (id_tag) REFERENCES Tags(id_tag) ON DELETE CASCADE
+
+);
+CREATE TABLE Favoris(
+    id_favori INT AUTO_INCREMENT PRIMARY KEY, 
+    id_utilisateur INT NOT NULL, 
+    id_article INT NOT NULL, 
+    FOREIGN KEY (id_article) REFERENCES Articles(id_article) ON DELETE CASCADE,
+    FOREIGN KEY (id_utilisateur) REFERENCES Utilisateurs(id_utilisateur) ON DELETE CASCADE
+);
+
+CREATE TABLE Commentaires (
+    id_commentaire INT AUTO_INCREMENT PRIMARY KEY, 
+    contenu TEXT, 
+    created_at date , 
+    id_utilisateur INT NOT NULL, 
+    id_article INT NOT NULL,
+    FOREIGN KEY (id_article) REFERENCES Articles(id_article) ON DELETE CASCADE,
+    FOREIGN KEY (id_utilisateur) REFERENCES Utilisateurs(id_utilisateur) ON DELETE CASCADE
+);
+CREATE TABLE Themes (
+    id_theme INT AUTO_INCREMENT PRIMARY KEY, 
+    nom VARCHAR(255),
+    description TEXT
+);
+
+SET GLOBAL max_allowed_packet=103741824;
+
+
 CREATE OR REPLACE VIEW ListeVehicules AS
 SELECT 
     v.id_vehicule,
@@ -105,4 +157,3 @@ BEGIN
 END //
 DELIMITER ;
 
-SET GLOBAL max_allowed_packet=103741824;
