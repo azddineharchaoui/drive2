@@ -257,6 +257,21 @@ try {
                 </a>
                 <?php endforeach; ?>
             </div>
+            <div class="mt-6 mb-8">
+                <div class="max-w-xl mx-auto">
+                    <div class="relative">
+                        <input type="text" id="searchInput"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Rechercher un article...">
+                        <div class="absolute right-3 top-2.5 text-gray-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="border-t border-gray-200 pt-8">
@@ -269,81 +284,82 @@ try {
         <!-- Articles Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             <?php if (empty($articles)): ?>
-                <div class="col-span-full text-center py-8">
-                    <p class="text-gray-600">Aucun article trouvé pour ce thème.</p>
-                </div>
+            <div class="col-span-full text-center py-8">
+                <p class="text-gray-600">Aucun article trouvé pour ce thème.</p>
+            </div>
             <?php else: ?>
-                <?php foreach ($articles as $article): ?>
-                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                        <!-- Image placeholder -->
-                        <?php if (!empty($article['image_url']) && file_exists($article['image_url'])): ?>
-                            <img src="<?= htmlspecialchars($article['image_url']) ?>"
-                                alt="<?= htmlspecialchars($article['titre']) ?>" class="w-full h-48 object-cover">
-                        <?php else: ?>
-                            <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
-                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                            </div>
-                        <?php endif; ?>
-                        <div class="p-4">
-                            <!-- Article Title -->
-                            <h3 class="text-lg font-semibold text-gray-800 hover:text-blue-500">
-                                <a href="article.php?id=<?= htmlspecialchars($article['id_article']) ?>">
-                                    <?= htmlspecialchars($article['titre']) ?>
-                                </a>
-                            </h3>
-                            <!-- Metadata -->
-                            <p class="text-sm text-gray-600 mt-2">
-                                By <span class="font-medium"><?= htmlspecialchars($article['nom'] . ' ' . $article['prenom']) ?></span>
-                                on <span class="text-gray-500"><?= htmlspecialchars($article['date_creation']) ?></span>
-                                | Theme: <span class="text-blue-500"><?= htmlspecialchars($article['theme']) ?></span>
-                            </p>
-                            <!-- Article Excerpt -->
-                            <p class="text-gray-700 mt-4">
-                                <?= substr(htmlspecialchars($article['contenu']), 0, 100) . '...' ?>
-                            </p>
+            <?php foreach ($articles as $article): ?>
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <!-- Image placeholder -->
+                <?php if (!empty($article['image_url']) && file_exists($article['image_url'])): ?>
+                <img src="<?= htmlspecialchars($article['image_url']) ?>"
+                    alt="<?= htmlspecialchars($article['titre']) ?>" class="w-full h-48 object-cover">
+                <?php else: ?>
+                <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+                    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <?php endif; ?>
+                <div class="p-4">
+                    <!-- Article Title -->
+                    <h3 class="text-lg font-semibold text-gray-800 hover:text-blue-500">
+                        <a href="article.php?id=<?= htmlspecialchars($article['id_article']) ?>">
+                            <?= htmlspecialchars($article['titre']) ?>
+                        </a>
+                    </h3>
+                    <!-- Metadata -->
+                    <p class="text-sm text-gray-600 mt-2">
+                        By <span
+                            class="font-medium"><?= htmlspecialchars($article['nom'] . ' ' . $article['prenom']) ?></span>
+                        on <span class="text-gray-500"><?= htmlspecialchars($article['date_creation']) ?></span>
+                        | Theme: <span class="text-blue-500"><?= htmlspecialchars($article['theme']) ?></span>
+                    </p>
+                    <!-- Article Excerpt -->
+                    <p class="text-gray-700 mt-4">
+                        <?= substr(htmlspecialchars($article['contenu']), 0, 100) . '...' ?>
+                    </p>
 
-                            <!-- Read More Link -->
-                            <div class="mt-4">
-                                <a href="article.php?id=<?= htmlspecialchars($article['id_article']) ?>"
-                                    class="text-blue-500 hover:underline font-medium">Read more →</a>
-                            </div>
-                        </div>
+                    <!-- Read More Link -->
+                    <div class="mt-4">
+                        <a href="article.php?id=<?= htmlspecialchars($article['id_article']) ?>"
+                            class="text-blue-500 hover:underline font-medium">Read more →</a>
                     </div>
-                <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endforeach; ?>
             <?php endif; ?>
         </div>
         <?php if (empty($articles)): ?>
         <p class="text-gray-600 text-center mt-6">No articles found.</p>
         <?php endif; ?>
         <?php if ($total_pages > 1): ?>
-<div class="flex justify-center items-center space-x-4 mt-8 mb-8">
-    <?php if ($current_page > 1): ?>
-        <a href="?page=<?= $current_page - 1 ?><?= $selectedTheme ? '&theme=' . $selectedTheme : '' ?>" 
-           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-            Précédent
-        </a>
-    <?php endif; ?>
-
-    <div class="flex space-x-2">
-        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-            <a href="?page=<?= $i ?><?= $selectedTheme ? '&theme=' . $selectedTheme : '' ?>" 
-               class="px-4 py-2 <?= $i === $current_page ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700' ?> rounded-lg hover:bg-blue-500 hover:text-white transition-colors">
-                <?= $i ?>
+        <div class="flex justify-center items-center space-x-4 mt-8 mb-8">
+            <?php if ($current_page > 1): ?>
+            <a href="?page=<?= $current_page - 1 ?><?= $selectedTheme ? '&theme=' . $selectedTheme : '' ?>"
+                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                Précédent
             </a>
-        <?php endfor; ?>
-    </div>
+            <?php endif; ?>
 
-    <?php if ($current_page < $total_pages): ?>
-        <a href="?page=<?= $current_page + 1 ?><?= $selectedTheme ? '&theme=' . $selectedTheme : '' ?>" 
-           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-            Suivant
-        </a>
-    <?php endif; ?>
-</div>
-<?php endif; ?>
+            <div class="flex space-x-2">
+                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                <a href="?page=<?= $i ?><?= $selectedTheme ? '&theme=' . $selectedTheme : '' ?>"
+                    class="px-4 py-2 <?= $i === $current_page ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700' ?> rounded-lg hover:bg-blue-500 hover:text-white transition-colors">
+                    <?= $i ?>
+                </a>
+                <?php endfor; ?>
+            </div>
+
+            <?php if ($current_page < $total_pages): ?>
+            <a href="?page=<?= $current_page + 1 ?><?= $selectedTheme ? '&theme=' . $selectedTheme : '' ?>"
+                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                Suivant
+            </a>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
     </main>
 
     <!-- Footer -->
@@ -497,6 +513,37 @@ try {
                 addTag(tag);
             }
         });
+    });
+
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        const query = this.value;
+        const articlesGrid = document.querySelector('.grid');
+        const paginationDiv = document.querySelector('.flex.justify-center.items-center.space-x-4');
+
+        if (query.length > 0) {
+            // Masquer la pagination pendant la recherche
+            if (paginationDiv) paginationDiv.style.display = 'none';
+
+            // Effectuer la requête AJAX
+            const formData = new FormData();
+            formData.append('query', query);
+
+            fetch('search_articles.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.text())
+                .then(data => {
+                    articlesGrid.innerHTML = data;
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    articlesGrid.innerHTML =
+                        '<div class="col-span-full text-center py-8"><p class="text-red-500">Une erreur est survenue lors de la recherche.</p></div>';
+                });
+        } else {
+            window.location.reload();
+        }
     });
     </script>
 
