@@ -8,7 +8,17 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+if (isset($_SESSION['user_id']) && $_SESSION['role_id'] == 1) {
+    $isAdmin = true;
+} else {
+    $isAdmin = false;
+}
+
 function isCommentOwner($commentId, $userId) {
+    global $isAdmin;
+    if ($isAdmin) {
+        return true; // L'admin peut tout supprimer
+    }
     try {
         $pdo = DatabaseConnection::getInstance()->getConnection();
         $stmt = $pdo->prepare("SELECT id_utilisateur FROM Commentaires WHERE id_commentaire = :id_commentaire");
@@ -20,7 +30,6 @@ function isCommentOwner($commentId, $userId) {
         return false;
     }
 }
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $id_article = $_POST['id_article'] ?? null;
@@ -94,6 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($id_article) {
         header('Location: article.php?id=' . $id_article . '#commentaires');
+    } else if ($_SESSION['role_id'] ==1) {
+        header('Location: Admin/dashboard.php');
     } else {
         header('Location: blog2.php');
     }
