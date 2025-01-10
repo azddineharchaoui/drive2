@@ -1,7 +1,7 @@
 <?php
 require_once('Classes/db.php');
 require_once('Classes/Article.php');
-
+    session_start();
 // Vérifier si l'ID est fourni
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     header('Location: blog2.php');
@@ -11,12 +11,16 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 try {
     $pdo = DatabaseConnection::getInstance()->getConnection();
     
-    // Récupérer les détails de l'article
-    $query = "SELECT a.*, u.nom, u.prenom, t.nom AS theme_nom 
+    // Récupérer les détails de l'article avec les tags
+    $query = "SELECT a.*, u.nom, u.prenom, t.nom AS theme_nom,
+              GROUP_CONCAT(tags.nom) as article_tags
               FROM Articles a
               JOIN Utilisateurs u ON a.id_utilisateur = u.id_utilisateur
               JOIN Themes t ON a.id_theme = t.id_theme
-              WHERE a.id_article = :id AND a.statut = 'Accepté'";
+              LEFT JOIN Article_Tag at ON a.id_article = at.id_article
+              LEFT JOIN Tags tags ON at.id_tag = tags.id_tag
+              WHERE a.id_article = :id AND a.statut = 'Accepté'
+              GROUP BY a.id_article";
     
     $stmt = $pdo->prepare($query);
     $stmt->execute(['id' => $_GET['id']]);
@@ -42,10 +46,10 @@ try {
 </head>
 
 <body class="bg-gray-100">
-    
+
     <!-- Navbar -->
-    
-<header class="bg-white shadow-md sticky top-0 z-50">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
         <nav class="container mx-auto flex justify-between items-center py-4 px-6">
             <div class="text-2xl font-extrabold text-blue-600">🌍 Drive & Loc</div>
             <button id="menuToggle" class="md:hidden text-gray-700 focus:outline-none">
@@ -138,6 +142,20 @@ try {
                         <p class="text-gray-500 text-sm">Auteur</p>
                     </div>
                 </div>
+                <!-- Section des tags -->
+                <?php if (!empty($article['article_tags'])): ?>
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-3">Tags</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <?php foreach (explode(',', $article['article_tags']) as $tag): ?>
+                        <span
+                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">
+                            #<?= htmlspecialchars(trim($tag)) ?>
+                        </span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
 
                 <!-- Contenu de l'article -->
                 <div class="prose max-w-none text-gray-700 leading-relaxed">
@@ -155,6 +173,117 @@ try {
                     </a>
                 </div>
             </div>
+        </div>
+
+        <!-- Section des commentaires -->
+        <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md mt-8 p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Commentaires</h2>
+
+            <!-- Affichage des commentaires existants -->
+            <?php
+    try {
+        $query = "SELECT c.*, u.nom, u.prenom 
+                  FROM Commentaires c 
+                  INNER JOIN Utilisateurs u ON c.id_utilisateur = u.id_utilisateur 
+                  WHERE c.id_article = :id_article 
+                  ORDER BY c.created_at DESC";
+        
+        $stmt = $pdo->prepare($query);
+        $stmt->execute(['id_article' => $_GET['id']]);
+        $commentaires = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if ($commentaires): ?>
+            <div class="space-y-6 mb-8">
+                <?php foreach ($commentaires as $commentaire): ?>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="flex items-center mb-2">
+                        <div class="bg-blue-100 rounded-full w-8 h-8 flex items-center justify-center">
+                            <span class="text-sm font-medium text-blue-800">
+                                <?= strtoupper(substr($commentaire['prenom'], 0, 1)) ?>
+                            </span>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">
+                                <?= htmlspecialchars($commentaire['prenom'] . ' ' . $commentaire['nom']) ?>
+                            </p>
+                            <p class="text-xs text-gray-500">
+                                <?= date('d/m/Y H:i', strtotime($commentaire['created_at'])) ?>
+                            </p>
+                        </div>
+                    </div>
+                    <p class="text-gray-700">
+                        <?= nl2br(htmlspecialchars($commentaire['contenu'])) ?>
+                    </p>
+                </div>
+                <?php if (isset($_SESSION['user_id']) && $commentaire['id_utilisateur'] == $_SESSION['user_id']): ?>
+                <div class="flex space-x-4 mt-2">
+                    <!-- Bouton Modifier -->
+                    <button onclick="toggleEditForm(<?= $commentaire['id_commentaire'] ?>)"
+                        class="text-sm text-blue-600 hover:text-blue-800">
+                        Modifier
+                    </button>
+
+                    <!-- Formulaire de modification (caché par défaut) -->
+                    <form id="editForm<?= $commentaire['id_commentaire']; ?>" action="manage_commentaire.php"
+                        method="POST" class="hidden mt-2 w-full">
+                        <input type="hidden" name="action" value="update">
+                        <input type="hidden" name="id_commentaire" value="<?= $commentaire['id_commentaire'] ?>">
+                        <input type="hidden" name="id_article" value="<?= $_GET['id'] ?>">
+                        <textarea name="contenu"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required><?= htmlspecialchars($commentaire['contenu']) ?></textarea>
+                        <div class="flex space-x-2 mt-2">
+                            <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                                Enregistrer
+                            </button>
+                            <button type="button" onclick="toggleEditForm(<?= $commentaire['id_commentaire'] ?>)"
+                                class="px-3 py-1 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">
+                                Annuler
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Formulaire de suppression -->
+                    <form action="manage_commentaire.php" method="POST" class="inline"
+                        onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="id_commentaire" value="<?= $commentaire['id_commentaire'] ?>">
+                        <input type="hidden" name="id_article" value="<?= $_GET['id'] ?>">
+                        <button type="submit" class="text-sm text-red-600 hover:text-red-800">
+                            Supprimer
+                        </button>
+                    </form>
+                </div>
+                <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+            <?php else: ?>
+            <p class="text-gray-500 mb-8">Aucun commentaire pour le moment. Soyez le premier à commenter !</p>
+            <?php endif; ?>
+
+            <?php } catch (Exception $e) {
+        echo "<p class='text-red-500'>Erreur lors de la récupération des commentaires : " . htmlspecialchars($e->getMessage()) . "</p>";
+    } ?>
+
+            <!-- Formulaire pour ajouter un commentaire -->
+            <form action="manage_commentaire.php" method="POST" class="space-y-4">
+                <input type="hidden" name="id_article" value="<?= htmlspecialchars($_GET['id']) ?>">
+                <input type="hidden" name="action" value="create">
+
+                <div>
+                    <label for="commentaire" class="block text-sm font-medium text-gray-700 mb-2">
+                        Votre commentaire
+                    </label>
+                    <textarea id="commentaire" name="contenu" rows="4"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required></textarea>
+                </div>
+
+                <button type="submit"
+                    class="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Publier le commentaire
+                </button>
+            </form>
         </div>
     </main>
 
@@ -183,7 +312,31 @@ try {
 
     menuToggle.addEventListener('click', () => {
         navLinks.classList.toggle('hidden');
-    });
+    }); 
+    
+        function toggleEditForm(commentId) {
+            const form = document.getElementById('editForm' + commentId);
+            if (form.classList.contains('hidden')) {
+                document.querySelectorAll('[id^="editForm"]').forEach(f => {
+                    if (f.id !== 'editForm' + commentId) {
+                        f.classList.add('hidden');
+                    }
+                });
+                form.classList.remove('hidden');
+            } else {
+                form.classList.add('hidden');
+            }
+        }
+
+    <?php if (isset($_SESSION['success'])): ?>
+    alert("<?= addslashes($_SESSION['success']) ?>");
+    <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['error'])): ?>
+    alert("<?= addslashes($_SESSION['error']) ?>");
+    <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
     </script>
 </body>
 

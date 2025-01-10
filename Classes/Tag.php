@@ -1,35 +1,48 @@
 <?php
+require_once('db.php');
+
 class Tag {
     private $pdo;
-    
+
     public function __construct() {
         $this->pdo = DatabaseConnection::getInstance()->getConnection();
     }
-    
+
     public function addTag($nom) {
-        try {
-            $stmt = $this->pdo->prepare("INSERT IGNORE INTO Tags (nom) VALUES (?)");
-            $stmt->execute([$nom]);
-            return $this->pdo->lastInsertId() ?: $this->getTagIdByName($nom);
-        } catch (PDOException $e) {
-            throw new Exception("Erreur lors de l'ajout du tag : " . $e->getMessage());
+        // Vérifier si le tag existe déjà
+        $stmt = $this->pdo->prepare("SELECT id_tag FROM Tags WHERE LOWER(nom) = LOWER(:nom)");
+        $stmt->execute(['nom' => $nom]);
+        $existingTag = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($existingTag) {
+            return $existingTag['id_tag'];
         }
+
+        // Si le tag n'existe pas, on le crée
+        $stmt = $this->pdo->prepare("INSERT INTO Tags (nom) VALUES (:nom)");
+        $stmt->execute(['nom' => $nom]);
+        return $this->pdo->lastInsertId();
     }
-    
-    public function getTagIdByName($nom) {
-        $stmt = $this->pdo->prepare("SELECT id_tag FROM Tags WHERE nom = ?");
-        $stmt->execute([$nom]);
-        return $stmt->fetchColumn();
-    }
-    
+
     public function linkTagsToArticle($articleId, $tagIds) {
-        try {
-            $stmt = $this->pdo->prepare("INSERT INTO Articles_Tags (id_article, id_tag) VALUES (?, ?)");
-            foreach ($tagIds as $tagId) {
-                $stmt->execute([$articleId, $tagId]);
-            }
-        } catch (PDOException $e) {
-            throw new Exception("Erreur lors de la liaison des tags : " . $e->getMessage());
+        $stmt = $this->pdo->prepare("INSERT INTO Article_Tag (id_article, id_tag) VALUES (:article_id, :tag_id)");
+        foreach ($tagIds as $tagId) {
+            $stmt->execute([
+                'article_id' => $articleId,
+                'tag_id' => $tagId
+            ]);
         }
+    }
+
+    public function getTagsByArticle($articleId) {
+        $stmt = $this->pdo->prepare("
+            SELECT t.* 
+            FROM Tags t
+            JOIN Article_Tag at ON t.id_tag = at.id_tag
+            WHERE at.id_article = :article_id
+        ");
+        $stmt->execute(['article_id' => $articleId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
+?>

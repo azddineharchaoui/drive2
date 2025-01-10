@@ -21,28 +21,23 @@ class Article {
 
     public function ajouterArticle() {
         $pdo = DatabaseConnection::getInstance()->getConnection();
-
-        // Gestion de l'upload de l'image
+    
         $image_path = null;
         if ($this->image && $this->image['error'] === UPLOAD_ERR_OK) {
             $upload_dir = 'uploads/articles/';
             if (!is_dir($upload_dir)) {
                 mkdir($upload_dir, 0777, true);
             }
-
-            // Génération d'un nom unique pour l'image
+    
             $extension = pathinfo($this->image['name'], PATHINFO_EXTENSION);
             $filename = uniqid() . '.' . $extension;
             $image_path = $upload_dir . $filename;
-
-            // Déplacement du fichier
-            if (move_uploaded_file($this->image['tmp_name'], $image_path)) {
-                $image_path = $image_path;
-            } else {
+    
+            if (!move_uploaded_file($this->image['tmp_name'], $image_path)) {
                 throw new Exception("Erreur lors de l'upload de l'image");
             }
         }
-
+    
         $sql = "INSERT INTO Articles (id_theme, id_utilisateur, titre, contenu, image_url, statut) 
                 VALUES (:id_theme, :id_utilisateur, :titre, :contenu, :image_url, :statut)";
         $stmt = $pdo->prepare($sql);
@@ -54,17 +49,16 @@ class Article {
             ':image_url' => $image_path,
             ':statut' => $this->statut,
         ]);
+        
+        return $pdo->lastInsertId(); 
     }
-
     public function modifierArticle($id) {
         $pdo = DatabaseConnection::getInstance()->getConnection();
 
-        // Récupérer l'ancienne image si elle existe
         $stmt = $pdo->prepare("SELECT image_url FROM Articles WHERE id_article = :id");
         $stmt->execute([':id' => $id]);
         $old_image = $stmt->fetchColumn();
 
-        // Gestion de l'upload de la nouvelle image
         $image_path = $old_image;
         if ($this->image && $this->image['error'] === UPLOAD_ERR_OK) {
             $upload_dir = 'uploads/articles/';
@@ -72,14 +66,11 @@ class Article {
                 mkdir($upload_dir, 0777, true);
             }
 
-            // Génération d'un nom unique pour l'image
             $extension = pathinfo($this->image['name'], PATHINFO_EXTENSION);
             $filename = uniqid() . '.' . $extension;
             $image_path = $upload_dir . $filename;
 
-            // Déplacement du fichier
             if (move_uploaded_file($this->image['tmp_name'], $image_path)) {
-                // Supprimer l'ancienne image si elle existe
                 if ($old_image && file_exists($old_image)) {
                     unlink($old_image);
                 }

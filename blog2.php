@@ -7,6 +7,8 @@ try {
     $stmtThemes = $pdo->query($queryThemes);
     $themes = $stmtThemes->fetchAll(PDO::FETCH_ASSOC);
 
+    $selectedTheme = isset($_GET['theme']) ? $_GET['theme'] : null;
+
     $queryArticles = "SELECT a.id_article, a.titre, a.contenu, a.date_creation, a.image_url, 
                   u.nom, u.prenom, t.nom AS theme,
                   GROUP_CONCAT(tg.nom) as tags
@@ -15,10 +17,19 @@ try {
                   JOIN Themes t ON a.id_theme = t.id_theme
                   LEFT JOIN Article_Tag at ON a.id_article = at.id_article
                   LEFT JOIN Tags tg ON at.id_tag = tg.id_tag
-                  WHERE a.statut = 'Accepté'
-                  GROUP BY a.id_article
-                  ORDER BY a.date_creation DESC";
-    $stmtArticles = $pdo->query($queryArticles);
+                  WHERE a.statut = 'Accepté'";
+    
+    if ($selectedTheme) {
+        $queryArticles .= " AND a.id_theme = :theme_id";
+    }
+    
+    $queryArticles .= " GROUP BY a.id_article ORDER BY a.date_creation DESC";
+    
+    $stmtArticles = $pdo->prepare($queryArticles);
+    if ($selectedTheme) {
+        $stmtArticles->bindParam(':theme_id', $selectedTheme, PDO::PARAM_INT);
+    }
+    $stmtArticles->execute();
     $articles = $stmtArticles->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     die("Erreur lors de la récupération des données : " . $e->getMessage());
@@ -147,13 +158,18 @@ try {
                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
                 </div>
 
-                <div class="mb-4 ">
-                    <label for="tags" class="block text-gray-600">Tags</label>
-                    <div id="tags-container" class="flex flex-wrap p-2 border border-gray-300 rounded-md">
-                        <input type="text" id="tag-input" placeholder="Add a tag" class="flex-grow p-2 outline-none">
+                <div class="mb-4">
+                    <label for="tags" class="block text-sm font-medium text-gray-700">Tags</label>
+                    <div id="tags-container"
+                        class="flex flex-wrap items-center gap-2 p-2 border rounded-md bg-white min-h-[42px]">
+                        <div id="tags-list" class="flex flex-wrap gap-2"></div>
+                        <input type="text" id="tag-input"
+                            class="flex-1 min-w-[120px] outline-none border-none bg-transparent focus:ring-0 text-sm"
+                            placeholder="Ajouter un tag...">
                     </div>
                     <input type="hidden" name="tags" id="tags-hidden">
-                    <p class="text-sm text-gray-500 mt-2">Press Enter or type a comma to add a tag.</p>
+                    <p class="text-xs text-gray-500 mt-1">Appuyez sur Entrée ou utilisez une virgule pour ajouter un tag
+                    </p>
                 </div>
 
                 <div class="flex justify-end space-x-3 mt-4">
@@ -196,44 +212,80 @@ try {
     <?php endif; ?>
     <!-- Main Content -->
     <main class="container mx-auto px-6 py-8">
-        <h2 class="text-3xl font-bold text-gray-800 mb-6">Latest Articles</h2>
+
+
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Thèmes</h2>
+            <div class="flex flex-wrap gap-3">
+                <a href="blog2.php"
+                    class="<?= !$selectedTheme ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700' ?> px-4 py-2 rounded-full hover:bg-blue-600 hover:text-white transition-colors">
+                    Tous les articles
+                </a>
+                <?php foreach ($themes as $theme): ?>
+                <a href="blog2.php?theme=<?= htmlspecialchars($theme['id_theme']) ?>"
+                    class="<?= $selectedTheme == $theme['id_theme'] ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700' ?> px-4 py-2 rounded-full hover:bg-blue-600 hover:text-white transition-colors">
+                    <?= htmlspecialchars($theme['nom']) ?>
+                </a>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 pt-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">
+                <?= $selectedTheme ? 'Articles dans ' . htmlspecialchars($themes[array_search($selectedTheme, array_column($themes, 'id_theme'))]['nom']) : 'Derniers Articles' ?>
+            </h2>
+        </div>
+
 
         <!-- Articles Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            <?php foreach ($articles as $article): ?>
-            <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                <!-- Image placeholder -->
-                <img src="https://via.placeholder.com/400x200" alt="Article Image" class="w-full h-48 object-cover">
-                <div class="p-4">
-                    <!-- Article Title -->
-                    <h3 class="text-lg font-semibold text-gray-800 hover:text-blue-500">
-                        <a href="article.php?id=<?= htmlspecialchars($article['id_article']) ?>">
-                            <?= htmlspecialchars($article['titre']) ?>
-                        </a>
-                    </h3>
-                    <!-- Metadata -->
-                    <p class="text-sm text-gray-600 mt-2">
-                        By <span
-                            class="font-medium"><?= htmlspecialchars($article['nom'] . ' ' . $article['prenom']) ?></span>
-                        on <span class="text-gray-500"><?= htmlspecialchars($article['date_creation']) ?></span>
-                        | Theme: <span class="text-blue-500"><?= htmlspecialchars($article['theme']) ?></span>
-                    </p>
-                    <!-- Article Excerpt -->
-                    <p class="text-gray-700 mt-4">
-                        <?= substr(htmlspecialchars($article['contenu']), 0, 100) . '...' ?>
-                    </p>
-
-                    <!-- Read More Link -->
-                    <div class="mt-4">
-                        <a href="article.php?id=<?= htmlspecialchars($article['id_article']) ?>"
-                            class="text-blue-500 hover:underline font-medium">Read more →</a>
-                    </div>
+            <?php if (empty($articles)): ?>
+                <div class="col-span-full text-center py-8">
+                    <p class="text-gray-600">Aucun article trouvé pour ce thème.</p>
                 </div>
-            </div>
-            <?php endforeach; ?>
+            <?php else: ?>
+                <?php foreach ($articles as $article): ?>
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                        <!-- Image placeholder -->
+                        <?php if (!empty($article['image_url']) && file_exists($article['image_url'])): ?>
+                            <img src="<?= htmlspecialchars($article['image_url']) ?>"
+                                alt="<?= htmlspecialchars($article['titre']) ?>" class="w-full h-48 object-cover">
+                        <?php else: ?>
+                            <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                        <?php endif; ?>
+                        <div class="p-4">
+                            <!-- Article Title -->
+                            <h3 class="text-lg font-semibold text-gray-800 hover:text-blue-500">
+                                <a href="article.php?id=<?= htmlspecialchars($article['id_article']) ?>">
+                                    <?= htmlspecialchars($article['titre']) ?>
+                                </a>
+                            </h3>
+                            <!-- Metadata -->
+                            <p class="text-sm text-gray-600 mt-2">
+                                By <span class="font-medium"><?= htmlspecialchars($article['nom'] . ' ' . $article['prenom']) ?></span>
+                                on <span class="text-gray-500"><?= htmlspecialchars($article['date_creation']) ?></span>
+                                | Theme: <span class="text-blue-500"><?= htmlspecialchars($article['theme']) ?></span>
+                            </p>
+                            <!-- Article Excerpt -->
+                            <p class="text-gray-700 mt-4">
+                                <?= substr(htmlspecialchars($article['contenu']), 0, 100) . '...' ?>
+                            </p>
 
+                            <!-- Read More Link -->
+                            <div class="mt-4">
+                                <a href="article.php?id=<?= htmlspecialchars($article['id_article']) ?>"
+                                    class="text-blue-500 hover:underline font-medium">Read more →</a>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
-
         <?php if (empty($articles)): ?>
         <p class="text-gray-600 text-center mt-6">No articles found.</p>
         <?php endif; ?>
@@ -268,7 +320,7 @@ try {
 
     // Profile modal handling
     const profileButton = document.getElementById('profileButton');
-    const closeModalButton = document.getElementById('closeModal');
+    // const closeModalButton = document.getElementById('closeModal');
     const profileModal = document.getElementById('profileModal');
     const profileButtonMobile = document.getElementById('profileButtonMobile');
 
@@ -280,16 +332,16 @@ try {
         profileModal.classList.remove('hidden');
     });
 
-    closeModalButton.addEventListener('click', () => {
-        profileModal.classList.add('hidden');
-    });
+    // closeModalButton.addEventListener('click', () => {
+    //     profileModal.classList.add('hidden');
+    // });
 
     // Profile form handling
-    document.getElementById('profileForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        console.log('Profile updated');
-        profileModal.classList.add('hidden');
-    });
+    // document.getElementById('profileForm').addEventListener('submit', (e) => {
+    //     e.preventDefault();
+    //     console.log('Profile updated');
+    //     profileModal.classList.add('hidden');
+    // });
 
     function openModal() {
         document.getElementById('articleModal').classList.remove('hidden');
@@ -335,39 +387,63 @@ try {
 
     const tagInput = document.getElementById('tag-input');
     const tagsContainer = document.getElementById('tags-container');
+    const tagsList = document.getElementById('tags-list');
     const tagsHidden = document.getElementById('tags-hidden');
     let tags = [];
 
-    tagInput.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter' || event.key === ',') {
-            event.preventDefault();
-            const tag = tagInput.value.trim();
-            if (tag && !tags.includes(tag)) {
-                tags.push(tag);
-                updateTags();
-            }
-            tagInput.value = '';
-        }
-    });
+    function createTagElement(tagText) {
+        const tagElement = document.createElement('div');
+        tagElement.className = 'inline-flex items-center bg-blue-100 text-blue-700 rounded-full px-3 py-1 text-sm';
+        tagElement.innerHTML = `
+        <span>${tagText}</span>
+        <button type="button" class="ml-2 text-blue-900 hover:text-blue-800 focus:outline-none" onclick="removeTag('${tagText}')">
+            &times;
+        </button>
+    `;
+        return tagElement;
+    }
 
-    function updateTags() {
-        tagsContainer.innerHTML = '';
+    function addTag(tagText) {
+        tagText = tagText.trim();
+        if (tagText && !tags.includes(tagText)) {
+            tags.push(tagText);
+            updateTagsDisplay();
+        }
+    }
+
+    function removeTag(tagText) {
+        tags = tags.filter(tag => tag !== tagText);
+        updateTagsDisplay();
+    }
+
+    function updateTagsDisplay() {
+        tagsList.innerHTML = '';
+
         tags.forEach(tag => {
-            const tagElement = document.createElement('div');
-            tagElement.className =
-                'tag bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm mr-2 mb-2 flex items-center';
-            tagElement.innerHTML =
-                `${tag} <span class="ml-2 cursor-pointer" onclick="removeTag('${tag}')">&times;</span>`;
-            tagsContainer.appendChild(tagElement);
+            tagsList.appendChild(createTagElement(tag));
         });
-        tagsContainer.appendChild(tagInput);
+
         tagsHidden.value = tags.join(',');
     }
 
-    function removeTag(tag) {
-        tags = tags.filter(t => t !== tag);
-        updateTags();
-    }
+    tagInput.addEventListener('keydown', function(event) {
+        if ((event.key === 'Enter' || event.key === ',') && this.value.trim()) {
+            event.preventDefault();
+            addTag(this.value);
+            this.value = '';
+        }
+    });
+
+    tagInput.addEventListener('paste', function(event) {
+        event.preventDefault();
+        const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+        const tagsArray = pastedText.split(',');
+        tagsArray.forEach(tag => {
+            if (tag.trim()) {
+                addTag(tag);
+            }
+        });
+    });
     </script>
 
 </body>
