@@ -214,8 +214,7 @@ try {
                     <p class="text-gray-700">
                         <?= nl2br(htmlspecialchars($commentaire['contenu'])) ?>
                     </p>
-                </div>
-                <?php if (isset($_SESSION['user_id']) && $commentaire['id_utilisateur'] == $_SESSION['user_id']): ?>
+                    <?php if (isset($_SESSION['user_id']) && $commentaire['id_utilisateur'] == $_SESSION['user_id']): ?>
                 <div class="flex space-x-4 mt-2">
                     <!-- Bouton Modifier -->
                     <button onclick="toggleEditForm(<?= $commentaire['id_commentaire'] ?>)"
@@ -255,6 +254,8 @@ try {
                     </form>
                 </div>
                 <?php endif; ?>
+                </div>
+                
                 <?php endforeach; ?>
             </div>
             <?php else: ?>

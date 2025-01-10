@@ -8,27 +8,56 @@ try {
     $themes = $stmtThemes->fetchAll(PDO::FETCH_ASSOC);
 
     $selectedTheme = isset($_GET['theme']) ? $_GET['theme'] : null;
+    
+    // Pagination settings
+    $articles_per_page = 6;
+    $current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    $offset = ($current_page - 1) * $articles_per_page;
+
+    $countQuery = "SELECT COUNT(*) as total FROM Articles a
+                   WHERE a.statut = 'Accepté'";
+    if ($selectedTheme) {
+        $countQuery .= " AND a.id_theme = :theme_id";
+    }
+    
+    $stmtCount = $pdo->prepare($countQuery);
+    if ($selectedTheme) {
+        $stmtCount->bindParam(':theme_id', $selectedTheme, PDO::PARAM_INT);
+    }
+    $stmtCount->execute();
+    $total_articles = $stmtCount->fetch(PDO::FETCH_ASSOC)['total'];
+    $total_pages = ceil($total_articles / $articles_per_page);
+
+    if ($current_page < 1) {
+        $current_page = 1;
+    } elseif ($current_page > $total_pages) {
+        $current_page = $total_pages;
+    }
 
     $queryArticles = "SELECT a.id_article, a.titre, a.contenu, a.date_creation, a.image_url, 
-                  u.nom, u.prenom, t.nom AS theme,
-                  GROUP_CONCAT(tg.nom) as tags
-                  FROM Articles a
-                  JOIN Utilisateurs u ON a.id_utilisateur = u.id_utilisateur
-                  JOIN Themes t ON a.id_theme = t.id_theme
-                  LEFT JOIN Article_Tag at ON a.id_article = at.id_article
-                  LEFT JOIN Tags tg ON at.id_tag = tg.id_tag
-                  WHERE a.statut = 'Accepté'";
+                      u.nom, u.prenom, t.nom AS theme,
+                      GROUP_CONCAT(tg.nom) as tags
+                      FROM Articles a
+                      JOIN Utilisateurs u ON a.id_utilisateur = u.id_utilisateur
+                      JOIN Themes t ON a.id_theme = t.id_theme
+                      LEFT JOIN Article_Tag at ON a.id_article = at.id_article
+                      LEFT JOIN Tags tg ON at.id_tag = tg.id_tag
+                      WHERE a.statut = 'Accepté'";
     
     if ($selectedTheme) {
         $queryArticles .= " AND a.id_theme = :theme_id";
     }
     
-    $queryArticles .= " GROUP BY a.id_article ORDER BY a.date_creation DESC";
+    $queryArticles .= " GROUP BY a.id_article 
+                       ORDER BY a.date_creation DESC 
+                       LIMIT :limit OFFSET :offset";
     
     $stmtArticles = $pdo->prepare($queryArticles);
     if ($selectedTheme) {
         $stmtArticles->bindParam(':theme_id', $selectedTheme, PDO::PARAM_INT);
     }
+    $stmtArticles->bindValue(':limit', $articles_per_page, PDO::PARAM_INT);
+    $stmtArticles->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmtArticles->execute();
     $articles = $stmtArticles->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
@@ -289,7 +318,32 @@ try {
         <?php if (empty($articles)): ?>
         <p class="text-gray-600 text-center mt-6">No articles found.</p>
         <?php endif; ?>
+        <?php if ($total_pages > 1): ?>
+<div class="flex justify-center items-center space-x-4 mt-8 mb-8">
+    <?php if ($current_page > 1): ?>
+        <a href="?page=<?= $current_page - 1 ?><?= $selectedTheme ? '&theme=' . $selectedTheme : '' ?>" 
+           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            Précédent
+        </a>
+    <?php endif; ?>
 
+    <div class="flex space-x-2">
+        <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+            <a href="?page=<?= $i ?><?= $selectedTheme ? '&theme=' . $selectedTheme : '' ?>" 
+               class="px-4 py-2 <?= $i === $current_page ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700' ?> rounded-lg hover:bg-blue-500 hover:text-white transition-colors">
+                <?= $i ?>
+            </a>
+        <?php endfor; ?>
+    </div>
+
+    <?php if ($current_page < $total_pages): ?>
+        <a href="?page=<?= $current_page + 1 ?><?= $selectedTheme ? '&theme=' . $selectedTheme : '' ?>" 
+           class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            Suivant
+        </a>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
     </main>
 
     <!-- Footer -->
